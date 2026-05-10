@@ -1,0 +1,108 @@
+(*<*)
+\<comment>\<open> ******************************************************************** 
+ * This file shall be integrated into HOL-CSP library.
+ * It contains the definition and some lemmas for the operator Guard.
+ ******************************************************************************\<close>
+(*>*)
+theory Guard
+  imports "HOL-CSP_RS"
+begin
+
+section \<open>Guard\<close>
+
+definition Guard :: \<open>bool \<Rightarrow> ('a, 'r) process\<^sub>p\<^sub>t\<^sub>i\<^sub>c\<^sub>k \<Rightarrow> ('a, 'r) process\<^sub>p\<^sub>t\<^sub>i\<^sub>c\<^sub>k \<close> (infixl \<open>\<^bold>&\<close> 84)
+  where \<open>b \<^bold>& P \<equiv> if b then P else STOP\<close>
+
+lemma Guard_cont [simp] : \<open>cont P \<Longrightarrow> cont (\<lambda>x. b \<^bold>& P x)\<close>
+  by (simp add: Guard_def)
+
+
+lemma Guard_True  [simp] : \<open>True \<^bold>& P = P\<close>
+  and Guard_False [simp] : \<open>False \<^bold>& P = STOP\<close>
+  and Guard_STOP  [simp] : \<open>b \<^bold>& STOP = STOP\<close>
+  by (simp_all add: Guard_def)
+
+lemma Guard_Guard_is_Guard_conj: \<open>b \<^bold>& (c \<^bold>& P) = (b \<and> c) \<^bold>& P\<close>
+  by (simp add: Guard_def)
+
+
+
+lemma Guard_Ndet : \<open>b \<^bold>& (P \<sqinter> Q) = b \<^bold>& P \<sqinter> b \<^bold>& Q\<close>
+  by (simp add: Guard_def)
+
+lemma Guard_Det : \<open>b \<^bold>& (P \<box> Q) = b \<^bold>& P \<box> b \<^bold>& Q\<close>
+  by (simp add: Guard_def)
+
+lemma Guard_Sliding : \<open>b \<^bold>& (P \<rhd> Q) = b \<^bold>& P \<rhd> b \<^bold>& Q\<close>
+  by (simp add: Guard_def Sliding_id)
+
+lemma Guard_Seq : \<open>b \<^bold>& (P \<^bold>; Q) = b \<^bold>& P \<^bold>; b \<^bold>& Q\<close>
+  by (simp add: Guard_def)
+
+lemma Guard_Sync : \<open>b \<^bold>& (P \<lbrakk>S\<rbrakk> Q) = b \<^bold>& P \<lbrakk>S\<rbrakk> b \<^bold>& Q\<close>
+  by (simp add: Guard_def)
+
+lemma Guard_Interrupt : \<open>b \<^bold>& (P \<triangle> Q) = b \<^bold>& P \<triangle> b \<^bold>& Q\<close>
+  by (simp add: Guard_def )
+
+lemma Guard_Throw : \<open>b \<^bold>& (P \<Theta> a\<in>A. Q a) = b \<^bold>& P \<Theta> a\<in>A. b \<^bold>& Q a\<close>
+  by (simp add: Guard_def)
+
+lemma Guard_Hiding : \<open>b \<^bold>& (P \ S) = b \<^bold>& P \ S\<close>
+  by (simp add: Guard_def )
+
+lemma Guard_Renaming : \<open>b \<^bold>& Renaming P f g = Renaming (b \<^bold>& P) f g\<close>
+  by (simp add: Guard_def)
+
+
+
+lemma Guard_Mprefix : \<open>b \<^bold>& (\<box>a\<in>A \<rightarrow> P a) = \<box>a\<in>{a. a \<in> A \<and> b} \<rightarrow> P a\<close>
+  by (simp add: Guard_def)
+
+lemma Guard_Mndetprefix : \<open>b \<^bold>& (\<sqinter>a\<in>A \<rightarrow> P a) = \<sqinter>a\<in>{a. a \<in> A \<and> b} \<rightarrow> P a\<close>
+  by (simp add: Guard_def)
+
+lemma Guard_read : \<open>b \<^bold>& (c\<^bold>?a\<in>A \<rightarrow> P a) = c\<^bold>?a\<in>{a. a \<in> A \<and> b} \<rightarrow> P a\<close>
+  by (simp add: Guard_def)
+
+lemma Guard_ndet_write : \<open>b \<^bold>& (c\<^bold>!\<^bold>!a\<in>A \<rightarrow> P a) = c\<^bold>!\<^bold>!a\<in>{a. a \<in> A \<and> b} \<rightarrow> P a\<close>
+  by (simp add: Guard_def)
+
+lemma Guard_write : \<open>b \<^bold>& (c\<^bold>!a \<rightarrow> P) = (if b then c\<^bold>!a \<rightarrow> P else STOP)\<close>
+  by (simp add: Guard_def)
+
+lemma Guard_write0 : \<open>b \<^bold>& (a \<rightarrow> P) = (if b then a \<rightarrow> P else STOP)\<close>
+  by (simp add: Guard_def)
+
+
+
+lemma Guard_GlobalDet :
+  \<open>b \<^bold>& (\<box>a \<in> A. P a) = \<box>a\<in>{a. a \<in> A \<and> b}. P a\<close>
+  by (simp add: Guard_def)
+
+lemma Guard_GlobalNdet :
+  \<open>b \<^bold>& (\<sqinter>a \<in> A. P a) = \<sqinter>a\<in>{a. a \<in> A \<and> b}. P a\<close>
+  by (simp add: Guard_def)
+
+lemma Guard_MultiSync : \<open>b \<^bold>& (\<^bold>\<lbrakk>S\<^bold>\<rbrakk> m \<in># M. P m) = (\<^bold>\<lbrakk>S\<^bold>\<rbrakk> m \<in># M. b \<^bold>& P m)\<close>
+  by (simp add: Guard_def)
+    (induct M rule: induct_subset_mset_empty_single, simp_all)
+
+
+
+lemma initials_Guard : \<open>(b \<^bold>& P)\<^sup>0 = (if b then P\<^sup>0 else {})\<close>
+  by (simp add: Guard_def)
+
+lemma (in After) After_Guard : \<open>(b \<^bold>& P) after a = (if b then P after a else \<Psi> STOP a)\<close>
+  by (simp add : Guard_def After_STOP)
+
+lemma (in AfterExt) After_Guard :
+  \<open>(b \<^bold>& P) after\<^sub>\<checkmark> e = (  if b then P after\<^sub>\<checkmark> e
+                       else case e of ev a \<Rightarrow> \<Psi> STOP a | \<checkmark>(r) \<Rightarrow> \<Omega> STOP r)\<close>
+  by (simp add: After\<^sub>t\<^sub>i\<^sub>c\<^sub>k_STOP Guard_def)
+
+lemma (in OpSemTransitions) \<tau>_trans_Guard :
+  \<open>P \<leadsto>\<^sub>\<tau> P' \<Longrightarrow> b \<Longrightarrow> b \<^bold>& P \<leadsto>\<^sub>\<tau> b \<^bold>& P'\<close> by simp
+
+
+end
