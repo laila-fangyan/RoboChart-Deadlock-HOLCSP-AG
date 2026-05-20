@@ -78,7 +78,7 @@ which loads all theories of the development.
 
 This development depends on the following AFP sessions:
 
-- `HOL-CSP_OpSem`
+- `HOL-CSP_RS`
 
 These AFP sessions are external dependencies and are not part of the present contribution.
 
